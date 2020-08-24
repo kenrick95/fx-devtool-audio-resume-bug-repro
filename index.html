@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Repro</title>
+  </head>
+  <body>
+    <p>
+      <button id="button-start">Start</button>
+      <button id="button-play-pause" disabled>Play/pause</button>
+    </p>
+    <p>
+      To reproduce the bug (found in Firefox 79.0; checked to still exist in
+      Firefox Nightly 81.0a1 (2020-08-24)):
+    </p>
+    <ol>
+      <li>Click "Start"</li>
+      <li>Browser will start playing an audio</li>
+      <li>Click "Pause"</li>
+      <li>Browser will suspend that audio</li>
+      <li>
+        Open browser console (via shortcut, browser menu, or right click -
+        inspect element; it doesn't matter)
+      </li>
+      <li>
+        Browser will resume that audio even though it is not supposed to!?
+      </li>
+    </ol>
+    <p>
+      Credits:
+      <a
+        href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Simple_synth"
+        >MDN - Simple Synth</a
+      >
+      for the "playTone" function
+    </p>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        let btnStartEl = document.getElementById('button-start');
+        let btnPlayPauseEl = document.getElementById('button-play-pause');
+        let btnStopEl = document.getElementById('button-stop');
+        let audioContext = new AudioContext();
+
+        let isPlaying = false;
+        // https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Simple_synth
+        function playTone(freq) {
+          let osc = audioContext.createOscillator();
+          osc.connect(audioContext.destination);
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          osc.start();
+          isPlaying = true;
+          btnPlayPauseEl.textContent = 'Pause';
+          btnPlayPauseEl.removeAttribute('disabled');
+          btnStartEl.setAttribute('disabled', 'disabled');
+
+          return osc;
+        }
+        btnStartEl.addEventListener('click', () => {
+          playTone(130.8127826502993); // C3
+        });
+        btnPlayPauseEl.addEventListener('click', async () => {
+          if (isPlaying) {
+            await audioContext.suspend();
+            isPlaying = false;
+            btnPlayPauseEl.textContent = 'Resume';
+          } else {
+            await audioContext.resume();
+            isPlaying = true;
+            btnPlayPauseEl.textContent = 'Pause';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
